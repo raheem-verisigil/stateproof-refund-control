@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stateproof.example/schemas/reconciliation-event-1.0.json",
+  "title": "StateProof Read-only Reconciliation Event",
+  "description": "An observed, non-executing event used to reconcile a refund across payment, commerce, support, agent, and dispute systems.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_version", "event_id", "event_type", "tenant_id", "operation_id", "source", "observed_at", "received_at", "payload_digest", "evidence"],
+  "properties": {
+    "event_version": {"const": "1.0"},
+    "event_id": {"type": "string", "pattern": "^sre_[A-Za-z0-9_-]{16,}$"},
+    "event_type": {"enum": ["REFUND_REQUESTED", "REFUND_SUBMITTED", "PROVIDER_ACKNOWLEDGED", "PROVIDER_WEBHOOK", "POST_STATE_OBSERVED", "DISPUTE_OBSERVED", "RECONCILIATION_ATTEMPTED", "OUTCOME_CLASSIFIED", "EXCEPTION_OPENED", "EXCEPTION_RESOLVED"]},
+    "tenant_id": {"type": "string", "minLength": 1},
+    "operation_id": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "record_id", "authority", "connector_id", "connector_version"],
+      "properties": {
+        "system": {"type": "string", "minLength": 1},
+        "record_id": {"type": "string", "minLength": 1},
+        "authority": {"enum": ["AUTHORITATIVE", "SECONDARY", "UNTRUSTED", "UNKNOWN"]},
+        "connector_id": {"type": "string", "minLength": 1},
+        "connector_version": {"type": "string", "minLength": 1},
+        "region": {"type": "string"}
+      }
+    },
+    "observed_at": {"type": "string", "format": "date-time"},
+    "received_at": {"type": "string", "format": "date-time"},
+    "business_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order_id": {"type": "string"},
+        "payment_id": {"type": "string"},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "amount_minor": {"type": "integer", "minimum": 0}
+      }
+    },
+    "provider_operation_id": {"type": "string"},
+    "provider_status": {"type": "string"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {"type": "string"},
+        "subject_type": {"enum": ["HUMAN", "SERVICE", "AGENT", "UNKNOWN"]},
+        "issuer": {"type": "string"}
+      }
+    },
+    "idempotency_key": {"type": "string"},
+    "payload_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_ref", "raw_payload_location", "redaction"],
+      "properties": {
+        "evidence_ref": {"type": "string", "minLength": 1},
+        "raw_payload_location": {"enum": ["CUSTOMER_VAULT", "PROVIDER_API", "WEBHOOK_STORE", "IMPORT_FILE", "UNAVAILABLE"]},
+        "redaction": {"enum": ["NONE", "MINIMIZED", "REDACTED", "UNKNOWN"]},
+        "freshness_ms": {"type": "integer", "minimum": 0},
+        "consistency": {"enum": ["STRONG", "EVENTUAL", "UNKNOWN"]},
+        "assumptions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {"enum": ["MATCHED", "DUPLICATE_RISK", "EXCESSIVE_REFUND_RISK", "UNKNOWN_OUTCOME", "DELAYED_FAILURE", "REVERSED", "REFUND_DISPUTE_CONFLICT", "CROSS_SYSTEM_MISMATCH", "INSUFFICIENT_EVIDENCE", "OPERATOR_REVIEW"]},
+        "confidence": {"enum": ["HIGH", "MEDIUM", "LOW", "UNKNOWN"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "next_action": {"type": "string"}
+      }
+    }
+  }
+}
